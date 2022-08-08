@@ -165,7 +165,9 @@ namespace Microsoft.DotNet.UpgradeAssistant.Extensions.WCFUpdater
                 { "uri", uri },
                 { "metadata", configUpdater.SupportsMetadataBehavior() },
                 { "debug", configUpdater.SupportsServiceDebug() },
-                { "bindings", configUpdater.GetBindings() }
+                { "bindings", configUpdater.GetBindings() },
+                { "hasCert", configUpdater.HasServiceCertificate() },
+                { "credentials", configUpdater.GetServiceCredentials() }
             };
             return context;
         }

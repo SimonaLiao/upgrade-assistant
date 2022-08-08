@@ -81,12 +81,12 @@ namespace Microsoft.DotNet.UpgradeAssistant.Extensions.WCFUpdater
         {
             string template = Constants.Template;
             Dictionary<string, Uri> uri = (Dictionary<string, Uri>)context["uri"];
-            template = UpdatePortNumber(template, uri, (HashSet<string>)context["bindings"]);
+            template = UpdatePortNumber(template, uri, (HashSet<string>)context["bindings"], (bool)context["hasCert"]);
             template = UpdateServiceBehavior(template, (int)context["metadata"], (bool)context["debug"], uri);
             return template;
         }
 
-        private static string UpdatePortNumber(string template, Dictionary<string, Uri> portNum, HashSet<string> bindings)
+        private static string UpdatePortNumber(string template, Dictionary<string, Uri> portNum, HashSet<string> bindings, bool hasCertificate)
         {
             bool httpBinding = false, httpsBinding = false;
             foreach (string b in bindings)
@@ -142,6 +142,14 @@ namespace Microsoft.DotNet.UpgradeAssistant.Extensions.WCFUpdater
                 {
                     host = host.Replace("[Https Delegate]", Constants.HttpsDelegate);
                     host = host.Replace("httpsPortNum", portNum[Uri.UriSchemeHttps].Port.ToString());
+                    if (hasCertificate)
+                    {
+                        host = host.Replace("[Configure Https]", Constants.HttpsCert);
+                    }
+                    else
+                    {
+                        host = host.Replace("[Configure Https]", Constants.UseHttps);
+                    }
                 }
                 else
                 {

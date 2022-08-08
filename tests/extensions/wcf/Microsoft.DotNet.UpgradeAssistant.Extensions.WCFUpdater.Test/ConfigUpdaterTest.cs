@@ -182,5 +182,47 @@ namespace Microsoft.DotNet.UpgradeAssistant.Extensions.WCFUpdater.Tests
             Assert.True(WCFUpdateChecker.IsConfigApplicable(XDocument.Parse(Input)));
             Assert.False(WCFUpdateChecker.IsConfigApplicable(XDocument.Parse(NotApplicableInput)));
         }
+
+        [Fact]
+        public void GetServiceCredentialsTest()
+        {
+            var credentials = @"
+            <serviceCredentials>
+                <clientCertificate>
+                  <certificate findValue=""certificateValue""
+                               storeLocation=""CurrentUser""
+                               storeName=""TrustedPeople""
+                               x509FindType=""FindByIssuerName"" />
+                  <authentication customCertificateValidatorType=""MyType""
+                                  certificateValidationMode=""Custom"" />
+                </clientCertificate>
+                <serviceCertificate findValue=""certificateValue""
+                            storeLocation=""CurrentUser""
+                            storeName=""AddressBook""
+                            x509FindType=""FindBySubjectName"" />
+                <userNameAuthentication customUserNamePasswordValidatorType=""String""
+                                userNamePasswordValidationMode=""Custom"" />
+                <windowsAuthentication includeWindowsGroups=""true"" />
+            </serviceCredentials>
+          </behavior>";
+
+            Dictionary<string, string> expected = new Dictionary<string, string>();
+            expected.Add("clientCertificate/findValue", "certificateValue");
+            expected.Add("clientCertificate/storeLocation", "CurrentUser");
+            expected.Add("clientCertificate/storeName", "TrustedPeople");
+            expected.Add("clientCertificate/x509FindType", "FindByIssuerName");
+            expected.Add("serviceCertificate/findValue", "certificateValue");
+            expected.Add("serviceCertificate/storeLocation", "CurrentUser");
+            expected.Add("serviceCertificate/storeName", "AddressBook");
+            expected.Add("serviceCertificate/x509FindType", "FindBySubjectName");
+            expected.Add("clientCertificate/customCertificateValidatorType", "MyType");
+            expected.Add("clientCertificate/certificateValidationMode", "Custom");
+            expected.Add("userNameAuthentication/customUserNamePasswordValidatorType", "String");
+            expected.Add("userNameAuthentication/userNamePasswordValidationMode", "Custom");
+            expected.Add("windowsAuthentication/includeWindowsGroups", "true");
+
+            var actual = new ConfigUpdater(XDocument.Parse(Input.Replace("</behavior>", credentials)), _logger).GetServiceCredentials();
+            Assert.Equal(expected, actual);
+        }
     }
 }

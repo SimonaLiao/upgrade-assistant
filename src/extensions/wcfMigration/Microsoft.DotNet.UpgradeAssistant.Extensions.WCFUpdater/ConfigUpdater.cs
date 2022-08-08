@@ -179,5 +179,46 @@ namespace Microsoft.DotNet.UpgradeAssistant.Extensions.WCFUpdater
 
             return bindings;
         }
+
+        public Dictionary<string, string> GetServiceCredentials()
+        {
+            var result = new Dictionary<string, string>();
+            string[] names = { "clientCertificate", "serviceCertificate", "userNameAuthentication", "windowsAuthentication" };
+            foreach (var n in names)
+            {
+                foreach (var c in _config.Root.DescendantsAndSelf(n))
+                {
+                    if (!c.HasAttributes)
+                    {
+                        foreach (var element in c.Elements())
+                        {
+                            foreach (var a in element.Attributes())
+                            {
+                                result.Add(n + "/" + a.Name, a.Value);
+                            }
+                        }
+                    }
+
+                    foreach (var a in c.Attributes())
+                    {
+                        result.Add(n + "/" + a.Name, a.Value);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        public bool HasServiceCertificate()
+        {
+            var cert = _config.Root.DescendantsAndSelf("serviceCertificate");
+            if (cert.Any())
+            {
+                return cert.First().Attribute("storeLocation") != null && cert.First().Attribute("storeName") != null &&
+                    cert.First().Attribute("findType") != null && cert.First().Attribute("findValue") != null;
+            }
+
+            return false;
+        }
     }
 }
