@@ -93,6 +93,61 @@ namespace Microsoft.DotNet.UpgradeAssistant.Extensions.WCFUpdater.Tests
                                         </system.serviceModel>
                                         </configuration>";
 
+        public const string Credentials = @"
+            <serviceCredentials>
+                <clientCertificate>
+                  <certificate findValue=""certificateValue""
+                               storeLocation=""CurrentUser""
+                               storeName=""TrustedPeople""
+                               x509FindType=""FindByIssuerName"" />
+                  <authentication customCertificateValidatorType=""MyType""
+                                  certificateValidationMode=""Custom"" />
+                </clientCertificate>
+                <serviceCertificate findValue=""certificateValue""
+                            storeLocation=""CurrentUser""
+                            storeName=""AddressBook""
+                            x509FindType=""FindBySubjectName"" />
+                <userNameAuthentication customUserNamePasswordValidatorType=""String""
+                                userNamePasswordValidationMode=""Custom"" />
+                <windowsAuthentication includeWindowsGroups=""true"" />
+            </serviceCredentials>
+          </behavior>";
+
+        public const string NetTcpBinding = @"
+            <bindings>
+              <netTcpBinding>
+                <binding>           
+                  <security mode=""None"">
+                    <transport clientCredentialType = ""Certificate""/>
+                  </security>
+                </binding>
+              </netTcpBinding>
+           </bindings>
+           </system.serviceModel>";
+
+        public const string NetTcpBindingWithMode = @"
+            <bindings>
+              <netTcpBinding>
+                <binding>           
+                  <security mode=""TransportWithMessageCredential"">
+                  </security>
+                </binding>
+              </netTcpBinding>
+           </bindings>
+           </system.serviceModel>";
+
+        public const string NetTcpBindingNoCertificate = @"
+            <bindings>
+              <netTcpBinding>
+                <binding>           
+                  <security mode=""Transport"">
+                    <transport clientCredentialType = ""Windows""/>
+                  </security>
+                </binding>
+              </netTcpBinding>
+           </bindings>
+           </system.serviceModel>";
+
         private readonly NullLogger _logger = NullLogger.Instance;
 
         [Fact]
@@ -102,7 +157,6 @@ namespace Microsoft.DotNet.UpgradeAssistant.Extensions.WCFUpdater.Tests
             expected.Add(Uri.UriSchemeHttp, new Uri("http://localhost:80/"));
             expected.Add(Uri.UriSchemeHttps, new Uri("https://localhost:443/sample/address"));
             expected.Add(Uri.UriSchemeNetTcp, new Uri("net.tcp://localhost:808/"));
-
             var result = new ConfigUpdater(XDocument.Parse(Input), _logger).GetUri();
             Assert.Equal(expected, result);
         }
@@ -186,26 +240,6 @@ namespace Microsoft.DotNet.UpgradeAssistant.Extensions.WCFUpdater.Tests
         [Fact]
         public void GetServiceCredentialsTest()
         {
-            var credentials = @"
-            <serviceCredentials>
-                <clientCertificate>
-                  <certificate findValue=""certificateValue""
-                               storeLocation=""CurrentUser""
-                               storeName=""TrustedPeople""
-                               x509FindType=""FindByIssuerName"" />
-                  <authentication customCertificateValidatorType=""MyType""
-                                  certificateValidationMode=""Custom"" />
-                </clientCertificate>
-                <serviceCertificate findValue=""certificateValue""
-                            storeLocation=""CurrentUser""
-                            storeName=""AddressBook""
-                            x509FindType=""FindBySubjectName"" />
-                <userNameAuthentication customUserNamePasswordValidatorType=""String""
-                                userNamePasswordValidationMode=""Custom"" />
-                <windowsAuthentication includeWindowsGroups=""true"" />
-            </serviceCredentials>
-          </behavior>";
-
             Dictionary<string, string> expected = new Dictionary<string, string>();
             expected.Add("clientCertificate/findValue", "certificateValue");
             expected.Add("clientCertificate/storeLocation", "CurrentUser");
@@ -221,7 +255,27 @@ namespace Microsoft.DotNet.UpgradeAssistant.Extensions.WCFUpdater.Tests
             expected.Add("userNameAuthentication/userNamePasswordValidationMode", "Custom");
             expected.Add("windowsAuthentication/includeWindowsGroups", "true");
 
-            var actual = new ConfigUpdater(XDocument.Parse(Input.Replace("</behavior>", credentials)), _logger).GetServiceCredentials();
+            var actual = new ConfigUpdater(XDocument.Parse(Input.Replace("</behavior>", Credentials)), _logger).GetServiceCredentials();
+            Assert.Equal(expected, actual);
+        }
+
+        [Fact]
+        public void HasServiceCertificateTest()
+        {
+            var actual = new ConfigUpdater(XDocument.Parse(Input.Replace("</behavior>", Credentials)), _logger).HasServiceCertificate();
+            Assert.True(actual);
+            actual = new ConfigUpdater(XDocument.Parse(Input.Replace("</behavior>", Credentials.Replace(@"x509FindType=""FindBySubjectName""", string.Empty))), _logger).HasServiceCertificate();
+            Assert.False(actual);
+        }
+
+        [Theory]
+        [InlineData(NetTcpBinding, true)]
+        [InlineData(NetTcpBindingWithMode, true)]
+        [InlineData(NetTcpBindingNoCertificate, false)]
+        [InlineData("</system.serviceModel>", false)]
+        public void HasNetTcpCertificateTest(string netTcpInput, bool expected)
+        {
+            var actual = new ConfigUpdater(XDocument.Parse(Input.Replace("</system.serviceModel>", netTcpInput)), _logger).HasNetTcpCertificate();
             Assert.Equal(expected, actual);
         }
     }

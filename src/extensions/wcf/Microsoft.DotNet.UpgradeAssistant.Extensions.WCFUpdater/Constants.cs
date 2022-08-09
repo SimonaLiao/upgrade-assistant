@@ -43,6 +43,7 @@ using Microsoft.Extensions.DependencyInjection;
                 
                 serviceBuilder.AddService<ServiceType>(serviceOptions => { 
                     [ServiceDebug PlaceHolder]
+[ServiceCredentials PlaceHolder]
                 });
                 
             });
@@ -111,5 +112,6 @@ using Microsoft.Extensions.DependencyInjection;
         public const string UserAuthMode = "host.Credentials.UserNameAuthentication.UserNamePasswordValidationMode = UserNamePasswordValidationMode.ModeType;";
         public const string UserAuthCustom = "host.Credentials.UserNameAuthentication.CustomUserNamePasswordValidator = new CustomValidatorType();";
         public const string WindowsAuth = "host.Credentials.WindowsAuthentication.IncludeWindowsGroups = boolean;";
+        public const string Trivia = "                    ";
     }
 }

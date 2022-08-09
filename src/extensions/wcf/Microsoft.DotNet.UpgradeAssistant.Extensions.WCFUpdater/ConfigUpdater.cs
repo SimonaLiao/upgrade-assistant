@@ -215,7 +215,32 @@ namespace Microsoft.DotNet.UpgradeAssistant.Extensions.WCFUpdater
             if (cert.Any())
             {
                 return cert.First().Attribute("storeLocation") != null && cert.First().Attribute("storeName") != null &&
-                    cert.First().Attribute("findType") != null && cert.First().Attribute("findValue") != null;
+                    cert.First().Attribute("x509FindType") != null && cert.First().Attribute("findValue") != null;
+            }
+
+            return false;
+        }
+
+        // returns if the NetTcp binding is configured to use certificate
+        public bool HasNetTcpCertificate()
+        {
+            var netTcp = _config.Root.DescendantsAndSelf("netTcpBinding");
+            if (netTcp.Any())
+            {
+                var security = netTcp.First().DescendantsAndSelf("security").First();
+                if (security != null)
+                {
+                    if (security.Attribute("mode").Value.Equals("TransportWithMessageCredential", StringComparison.Ordinal))
+                    {
+                        return true;
+                    }
+
+                    if (security.Element("transport") != null &&
+                        security.Element("transport").Attribute("clientCredentialType").Value.Equals("Certificate", StringComparison.Ordinal))
+                    {
+                        return true;
+                    }
+                }
             }
 
             return false;

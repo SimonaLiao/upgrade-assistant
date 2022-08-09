@@ -80,13 +80,15 @@ namespace Microsoft.DotNet.UpgradeAssistant.Extensions.WCFUpdater
         private static string UpdateTemplateCode(Dictionary<string, object> context, ILogger logger)
         {
             string template = Constants.Template;
-            Dictionary<string, Uri> uri = (Dictionary<string, Uri>)context["uri"];
-            template = UpdatePortNumber(template, uri, (HashSet<string>)context["bindings"], (bool)context["hasCert"]);
+            var uri = (Dictionary<string, Uri>)context["uri"];
+            var credentials = (Dictionary<string, string>)context["credentials"];
+            template = UpdatePortNumber(template, uri, (HashSet<string>)context["bindings"], (bool)context["hasCert"], credentials);
             template = UpdateServiceBehavior(template, (int)context["metadata"], (bool)context["debug"], uri);
+            template = ConfigureServiceCredentials(template, (bool)context["netTcpCert"], credentials);
             return template;
         }
 
-        private static string UpdatePortNumber(string template, Dictionary<string, Uri> portNum, HashSet<string> bindings, bool hasCertificate)
+        private static string UpdatePortNumber(string template, Dictionary<string, Uri> portNum, HashSet<string> bindings, bool hasCertificate, Dictionary<string, string> credentials)
         {
             bool httpBinding = false, httpsBinding = false;
             foreach (string b in bindings)
@@ -144,7 +146,11 @@ namespace Microsoft.DotNet.UpgradeAssistant.Extensions.WCFUpdater
                     host = host.Replace("httpsPortNum", portNum[Uri.UriSchemeHttps].Port.ToString());
                     if (hasCertificate)
                     {
-                        host = host.Replace("[Configure Https]", Constants.HttpsCert);
+                        var httpsWithCert = Constants.HttpsCert.Replace("storeLocation", credentials["serviceCertificate/storeLocation"])
+                                                               .Replace("storeName", credentials["serviceCertificate/storeName"])
+                                                               .Replace("findType", credentials["serviceCertificate/findType"])
+                                                               .Replace("findValue", credentials["serviceCertificate/findValue"]);
+                        host = host.Replace("[Configure Https]", httpsWithCert);
                     }
                     else
                     {
@@ -200,6 +206,54 @@ namespace Microsoft.DotNet.UpgradeAssistant.Extensions.WCFUpdater
             }
 
             return template;
+        }
+
+        private static string ConfigureServiceCredentials(string template, bool hasNetTcpCert, Dictionary<string, string> credentials)
+        {
+            string cert = string.Empty;
+
+            // add netTcp service certificate if applicable
+            if (hasNetTcpCert)
+            {
+                string service = Constants.NetTcpCert.Replace("storeLocation", credentials["serviceCertificate/storeLocation"])
+                                                     .Replace("storeName", credentials["serviceCertificate/storeName"])
+                                                     .Replace("findType", credentials["serviceCertificate/findType"])
+                                                     .Replace("findValue", credentials["serviceCertificate/findValue"]);
+                cert = Constants.Trivia + service + System.Environment.NewLine;
+            }
+
+            // configure client certificate NEED TO CHANGE FORMATTING
+            if (credentials.ContainsKey("clientCertificate/findValue"))
+            {
+                string client = Constants.ClientCert.Replace("storeLocation", credentials["clientCertificate/storeLocation"])
+                                                    .Replace("storeName", credentials["clientCertificate/storeName"])
+                                                    .Replace("findType", credentials["clientCertificate/findType"])
+                                                    .Replace("findValue", credentials["clientCertificate/findValue"]);
+                cert += Constants.Trivia + client + System.Environment.NewLine + Constants.Trivia +
+                    Constants.ClientAuthMode.Replace("ModeType", credentials["clientCertificate/certificateValidationMode"]) + System.Environment.NewLine;
+                if (credentials["clientCertificate/certificateValidationMode"].Equals("custom", StringComparison.OrdinalIgnoreCase))
+                {
+                    cert += Constants.Trivia + Constants.ClientAuthCustom.Replace("CustomValidatorType", credentials["clientCertificate/customCertificateValidatorType"]) + System.Environment.NewLine;
+                }
+            }
+
+            // configure username authentication
+            if (credentials.ContainsKey("userNameAuthentication/userNamePasswordValidationMode"))
+            {
+                cert += Constants.Trivia + Constants.ClientAuthMode.Replace("ModeType", credentials["userNameAuthentication/userNamePasswordValidationMode"]) + System.Environment.NewLine;
+                if (credentials["userNameAuthentication/userNamePasswordValidationMode"].Equals("custom", StringComparison.OrdinalIgnoreCase))
+                {
+                    cert += Constants.Trivia + Constants.ClientAuthCustom.Replace("CustomValidatorType", credentials["userNameAuthentication/customUserNamePasswordValidatorType"]) + System.Environment.NewLine;
+                }
+            }
+
+            // configure windows group
+            if (credentials.ContainsKey("windowsAuthentication/includeWindowsGroups"))
+            {
+                cert += Constants.Trivia + Constants.WindowsAuth.Replace("boolean", credentials["windowsAuthentication/includeWindowsGroups"]);
+            }
+
+            return template.Replace("[ServiceCredentials PlaceHolder]", cert);
         }
     }
 }

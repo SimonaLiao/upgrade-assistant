@@ -167,7 +167,8 @@ namespace Microsoft.DotNet.UpgradeAssistant.Extensions.WCFUpdater
                 { "debug", configUpdater.SupportsServiceDebug() },
                 { "bindings", configUpdater.GetBindings() },
                 { "hasCert", configUpdater.HasServiceCertificate() },
-                { "credentials", configUpdater.GetServiceCredentials() }
+                { "credentials", configUpdater.GetServiceCredentials() },
+                { "netTcpCert", configUpdater.HasNetTcpCertificate() }
             };
             return context;
         }
