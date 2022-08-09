@@ -39,11 +39,11 @@ using Microsoft.Extensions.DependencyInjection;
                 serviceBuilder.ConfigureServiceHostBase<ServiceType>(varName =>
                 {
                     int UA_placeHolder;
+[ServiceCredentials PlaceHolder]
                 });
                 
                 serviceBuilder.AddService<ServiceType>(serviceOptions => { 
                     [ServiceDebug PlaceHolder]
-[ServiceCredentials PlaceHolder]
                 });
                 
             });
@@ -72,7 +72,7 @@ using Microsoft.Extensions.DependencyInjection;
 
         public const string Debug = @"serviceOptions.DebugBehavior.IncludeExceptionDetailInFaults = true;";
 
-        public const string NetTcp = "            builder.WebHost.UseNetTcp(netTcpPortNum);\n";
+        public const string NetTcp = "            builder.WebHost.UseNetTcp(netTcpPortNum);";
         public const string ConfigureKestrel =
             @"            builder.WebHost.ConfigureKestrel(options =>
             {
@@ -82,9 +82,9 @@ using Microsoft.Extensions.DependencyInjection;
 
         public const string HttpPort = "options.ListenAnyIP(httpPortNum);";
         public const string HttpsDelegate = @"options.ListenAnyIP(httpsPortNum, listenOptions =>
-                    {
-                            [Configure Https]
-                    })";
+                {
+                    [Configure Https]
+                })";
 
         public const string UseHttps = "listenOptions.UseHttps();";
         public const string CoreWCFPackages = @"<ItemGroup>
@@ -100,13 +100,13 @@ using Microsoft.Extensions.DependencyInjection;
         public const string ServiceModelComment = " system.serviceModel section is moved to a separate wcf.config file located at the same directory as this file.";
         public const string MexEndpoint = "The mex endpoint is removed because it's not support in CoreWCF. Instead, the metadata service is enabled in the source code.";
 
-        public const string HttpsCert = @"X509Store store = new X509Store(storeName, storeLocation);
+        public const string HttpsCert = @"X509Store store = new X509Store(StoreName.storeName, StoreLocation.storeLocation);
                     store.Open(OpenFlags.ReadOnly);
-                    X509Certificate2Collection certs = store.Certificates.Find(findType, findValue, false);
+                    X509Certificate2Collection certs = store.Certificates.Find(X509FindType.findType, findValue, false);
                     listenOptions.UseHttps(new X509Certificate2(certs[0]));";
 
-        public const string NetTcpCert = "host.Credentials.ServiceCertificate.SetCertificate(storeLocation, storeName, findType, findValue);";
-        public const string ClientCert = "host.Credentials.ClientCertificate.SetCertificate(storeLocation, storeName, findType, findValue);";
+        public const string NetTcpCert = "host.Credentials.ServiceCertificate.SetCertificate(StoreLocation.storeLocation, StoreName.storeName, X509FindType.findType, findValue);";
+        public const string ClientCert = "host.Credentials.ClientCertificate.SetCertificate(StoreLocation.storeLocation, StoreName.storeName, X509FindType.findType, findValue);";
         public const string ClientAuthMode = "host.Credentials.ClientCertificate.Authentication.CertificateValidationMode = X509CertificateValidationMode.ModeType;";
         public const string ClientAuthCustom = "host.Credentials.ClientCertificate.Authentication.CustomCertificateValidator = new CustomValidatorType();";
         public const string UserAuthMode = "host.Credentials.UserNameAuthentication.UserNamePasswordValidationMode = UserNamePasswordValidationMode.ModeType;";

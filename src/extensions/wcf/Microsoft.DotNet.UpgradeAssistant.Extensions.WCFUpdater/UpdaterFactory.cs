@@ -77,7 +77,7 @@ namespace Microsoft.DotNet.UpgradeAssistant.Extensions.WCFUpdater
             }
         }
 
-        private static string UpdateTemplateCode(Dictionary<string, object> context, ILogger logger)
+        public static string UpdateTemplateCode(Dictionary<string, object> context, ILogger logger)
         {
             string template = Constants.Template;
             var uri = (Dictionary<string, Uri>)context["uri"];
@@ -123,7 +123,7 @@ namespace Microsoft.DotNet.UpgradeAssistant.Extensions.WCFUpdater
             string host = string.Empty;
             if (portNum.ContainsKey(Uri.UriSchemeNetTcp))
             {
-                host += Constants.NetTcp;
+                host += Constants.NetTcp + System.Environment.NewLine;
                 host = host.Replace("netTcpPortNum", portNum[Uri.UriSchemeNetTcp].Port.ToString());
             }
 
@@ -148,8 +148,8 @@ namespace Microsoft.DotNet.UpgradeAssistant.Extensions.WCFUpdater
                     {
                         var httpsWithCert = Constants.HttpsCert.Replace("storeLocation", credentials["serviceCertificate/storeLocation"])
                                                                .Replace("storeName", credentials["serviceCertificate/storeName"])
-                                                               .Replace("findType", credentials["serviceCertificate/findType"])
-                                                               .Replace("findValue", credentials["serviceCertificate/findValue"]);
+                                                               .Replace("findType", credentials["serviceCertificate/x509FindType"])
+                                                               .Replace("findValue", "\"" + credentials["serviceCertificate/findValue"] + "\"");
                         host = host.Replace("[Configure Https]", httpsWithCert);
                     }
                     else
@@ -217,20 +217,26 @@ namespace Microsoft.DotNet.UpgradeAssistant.Extensions.WCFUpdater
             {
                 string service = Constants.NetTcpCert.Replace("storeLocation", credentials["serviceCertificate/storeLocation"])
                                                      .Replace("storeName", credentials["serviceCertificate/storeName"])
-                                                     .Replace("findType", credentials["serviceCertificate/findType"])
-                                                     .Replace("findValue", credentials["serviceCertificate/findValue"]);
+                                                     .Replace("findType", credentials["serviceCertificate/x509FindType"])
+                                                     .Replace("findValue", "\"" + credentials["serviceCertificate/findValue"] + "\"");
                 cert = Constants.Trivia + service + System.Environment.NewLine;
             }
 
-            // configure client certificate NEED TO CHANGE FORMATTING
+            // configure client certificate
             if (credentials.ContainsKey("clientCertificate/findValue"))
             {
                 string client = Constants.ClientCert.Replace("storeLocation", credentials["clientCertificate/storeLocation"])
                                                     .Replace("storeName", credentials["clientCertificate/storeName"])
-                                                    .Replace("findType", credentials["clientCertificate/findType"])
-                                                    .Replace("findValue", credentials["clientCertificate/findValue"]);
-                cert += Constants.Trivia + client + System.Environment.NewLine + Constants.Trivia +
-                    Constants.ClientAuthMode.Replace("ModeType", credentials["clientCertificate/certificateValidationMode"]) + System.Environment.NewLine;
+                                                    .Replace("findType", credentials["clientCertificate/x509FindType"])
+                                                    .Replace("findValue", "\"" + credentials["clientCertificate/findValue"] + "\"");
+                cert += Constants.Trivia + client + System.Environment.NewLine;
+            }
+
+            // configure client certificate authentication
+            var auth = new List<string[]>();
+            if (credentials.ContainsKey("clientCertificate/certificateValidationMode"))
+            {
+                cert += Constants.Trivia + Constants.ClientAuthMode.Replace("ModeType", credentials["clientCertificate/certificateValidationMode"]) + System.Environment.NewLine;
                 if (credentials["clientCertificate/certificateValidationMode"].Equals("custom", StringComparison.OrdinalIgnoreCase))
                 {
                     cert += Constants.Trivia + Constants.ClientAuthCustom.Replace("CustomValidatorType", credentials["clientCertificate/customCertificateValidatorType"]) + System.Environment.NewLine;
@@ -240,10 +246,10 @@ namespace Microsoft.DotNet.UpgradeAssistant.Extensions.WCFUpdater
             // configure username authentication
             if (credentials.ContainsKey("userNameAuthentication/userNamePasswordValidationMode"))
             {
-                cert += Constants.Trivia + Constants.ClientAuthMode.Replace("ModeType", credentials["userNameAuthentication/userNamePasswordValidationMode"]) + System.Environment.NewLine;
+                cert += Constants.Trivia + Constants.UserAuthMode.Replace("ModeType", credentials["userNameAuthentication/userNamePasswordValidationMode"]) + System.Environment.NewLine;
                 if (credentials["userNameAuthentication/userNamePasswordValidationMode"].Equals("custom", StringComparison.OrdinalIgnoreCase))
                 {
-                    cert += Constants.Trivia + Constants.ClientAuthCustom.Replace("CustomValidatorType", credentials["userNameAuthentication/customUserNamePasswordValidatorType"]) + System.Environment.NewLine;
+                    cert += Constants.Trivia + Constants.UserAuthCustom.Replace("CustomValidatorType", credentials["userNameAuthentication/customUserNamePasswordValidatorType"]) + System.Environment.NewLine;
                 }
             }
 
